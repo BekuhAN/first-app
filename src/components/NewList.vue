@@ -7,27 +7,32 @@
       ></i>
       Добавить список
     </span>
-    <form class="list__form" v-if="formShow">
-      <input class="list__name" type="text" placeholder="Название списка" />
+    <form class="list__form" v-if="formShow" @submit.prevent="addList">
+      <input
+        class="list__name"
+        type="text"
+        placeholder="Название списка"
+        v-model="listName"
+        required
+      />
       <ul class="list__colors">
         <li
           class="colors__item"
           :class="{ colors__item__active: color.id === colorItemActive }"
-          v-for="(color) of colors"
+          v-for="color of colors"
           :key="color.id"
           :style="{ background: color.hex }"
           @click="selectColor(color.id)"
         ></li>
       </ul>
-      <input class="btn" type="button" value="Добавить" />
-      <span class="list__form__close"
-            @click="showForm()"
-      >&times;</span>
+      <input class="btn" type="submit" value="Добавить" />
+      <span class="list__form__close" @click="showForm()">&times;</span>
     </form>
   </div>
 </template>
 
 <script>
+import axios from "axios";
 import iconAddList from "../assets/Group.png";
 
 export default {
@@ -36,19 +41,34 @@ export default {
     return {
       iconAddList,
       formShow: false,
-      colorItemActive: null,
+      colorItemActive: this.colors.length ? this.colors[0].id : null,
+      listName: "",
     };
-  },
-  beforeMount() {
-      this.colorItemActive = this.colors[0].id
   },
   methods: {
     selectColor: function(i) {
       this.colorItemActive = i;
     },
     showForm: function() {
+      this.listName = "";
       this.formShow = !this.formShow;
-      this.colorItemActive = this.colors[0].id;
+      this.colorItemActive = this.colors.length ? this.colors[0].id : null;
+    },
+    addList: function() {
+      const newList = {
+        name: this.listName,
+        colorId: this.colorItemActive,
+      };
+      axios
+        .post("http://localhost:3000/lists", newList)
+        .then(({ data }) => {
+          const color = this.colors.find(
+            (color) => color.id == this.colorItemActive
+          );
+          this.$emit("add-new-list", { ...data, color, tasks: [] });
+          this.showForm();
+        })
+        .catch(() => alert("error"));
     },
   },
 };
@@ -56,7 +76,8 @@ export default {
 
 <style lang="scss" scoped>
 .new_list {
-    position: relative;
+  position: relative;
+  font-size: 14px;
 }
 
 .list__add {
@@ -81,6 +102,7 @@ export default {
   box-sizing: content-box;
   border-radius: 5px;
   box-shadow: 0 0 5px 0px #eee;
+  z-index: 4;
   .list__name {
     padding: 8px 10px;
     border: 1px solid #eeeeee;
@@ -129,7 +151,7 @@ export default {
     cursor: pointer;
     font-size: 20px;
     &:hover {
-        background: lighten(#5c5c5c, 10%);
+      background: lighten(#5c5c5c, 10%);
     }
   }
 }
